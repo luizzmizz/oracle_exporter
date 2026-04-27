@@ -1,0 +1,10 @@
+FROM oraclelinux:9
+
+RUN dnf install -y golang gcc && dnf clean all
+
+WORKDIR /build
+COPY . .
+
+RUN go mod download && \
+    go build -o oracle_exporter . && \
+    echo "Built: $(file oracle_exporter)"

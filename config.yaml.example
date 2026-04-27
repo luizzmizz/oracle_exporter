@@ -1,0 +1,203 @@
+# oracle_exporter configuration reference
+# Copy to config.yaml and edit for your environment.
+#
+# Global scrape timeout applied to every collector query.
+scrape_timeout: 30s
+
+# ---------------------------------------------------------------------------
+# Global collector defaults — apply to all targets unless overridden.
+#
+# Each collector entry accepts:
+#   enabled: true|false   (default: true when the field is absent)
+#   include: [pattern, ...]  regex allowlist  — only names matching any pattern
+#   exclude: [pattern, ...]  regex denylist   — drop names matching any pattern
+#                            (applied after include)
+#
+# include/exclude only apply to high-cardinality collectors:
+#   sysstat, syswaitclass, systimemodel, event
+# ---------------------------------------------------------------------------
+collectors:
+  tablespace:
+    enabled: true
+
+  asm_diskgroup:
+    enabled: true     # ASM targets only run this one; ignored on DB targets unless explicitly enabled
+
+  session:
+    enabled: true
+
+  sysstat:
+    enabled: true
+    # Allowlist: collect only the most useful sysstat counters.
+    # Comment out or remove include to collect everything.
+    include:
+      - "^physical reads$"
+      - "^physical writes$"
+      - "^redo size$"
+      - "^parse count \\(hard\\)$"
+      - "^execute count$"
+      - "^user commits$"
+      - "^user rollbacks$"
+      - "^db block gets$"
+      - "^consistent gets$"
+      - "^sorts \\(disk\\)$"
+
+  syswaitclass:
+    enabled: true
+    # Exclude idle wait classes to reduce noise.
+    exclude:
+      - "^Idle$"
+
+  systimemodel:
+    enabled: true
+    # Collect only the most meaningful time model components.
+    include:
+      - "^DB time$"
+      - "^DB CPU$"
+      - "^sql execute elapsed time$"
+      - "^parse time elapsed$"
+      - "^hard parse elapsed time$"
+      - "^PL/SQL execution elapsed time$"
+
+  event:
+    enabled: true
+    # Exclude idle/background events to keep cardinality low.
+    exclude:
+      - "^SQL\\*Net"
+      - "^pipe get$"
+      - "^virtual circuit status$"
+      - "^pmon timer$"
+      - "^rdbms ipc message$"
+      - "^smon timer$"
+      - "^jobq slave wait$"
+
+  flash_recovery_area:
+    enabled: true
+
+  uptime:
+    enabled: true
+
+  dataguard:
+    enabled: false    # enable only on primary/standby pairs
+
+  sanity:
+    enabled: true     # detects datafiles sized beyond their maxsize (autoextend risk)
+
+
+# ---------------------------------------------------------------------------
+# Targets — one entry per Oracle instance/CDB/ASM you want to monitor.
+#
+# Connection fields (one of the following combinations):
+#   connect_string              full Oracle connection string (takes priority)
+#   host + service [+ port]     individual fields, port defaults to 1521
+#
+# Authentication:
+#   username                    Oracle account (e.g. DBSNMP, C##DBSNMP for CDB)
+#   password                    cleartext password
+#   wallet_location             path to Oracle wallet directory; password can be
+#                               omitted when the wallet contains credentials for
+#                               the target connect string
+#
+# Privilege (required for ASM, optional for DB):
+#   privilege: sysdba            connect AS SYSDBA  (asmsnmp always needs this)
+#   privilege: sysoper           connect AS SYSOPER
+#   privilege: sysasm            connect AS SYSASM  (rarely needed; use sysdba instead)
+#
+# Per-target collector overrides:
+#   collectors:
+#     <collector_name>:
+#       enabled: true|false      override the global enabled flag
+#       include: [...]           override the global include list
+#       exclude: [...]           override the global exclude list
+#
+# Auto-detection (no config needed):
+#   Instance name starts with +ASM  → ASM target; only asm_diskgroup runs
+#   v$database.cdb = YES            → CDB; uses CDB_* views + gv$ with pdb/inst_id labels
+#   otherwise                       → non-CDB; uses DBA_* views + gv$ with inst_id label
+# ---------------------------------------------------------------------------
+targets:
+
+  # -------------------------------------------------------------------
+  # CDB on a 2-node RAC
+  # One connection covers all PDBs and all RAC nodes:
+  #   tablespace metrics carry pdb + inst_id labels
+  #   gv$ metrics carry inst_id label
+  # -------------------------------------------------------------------
+  prod-cdb:
+    connect_string: "scan-vip:1521/PRODCDB"
+    username: C##DBSNMP
+    password: secret
+
+  # -------------------------------------------------------------------
+  # CDB with Data Guard: enable dataguard only on this target
+  # -------------------------------------------------------------------
+  prod-cdb-dg:
+    connect_string: "scan-vip:1521/PRODCDB"
+    username: C##DBSNMP
+    password: secret
+    collectors:
+      dataguard:
+        enabled: true
+
+  # -------------------------------------------------------------------
+  # ASM instance: auto-detected, only asm_diskgroup collector runs.
+  # asmsnmp requires SYSDBA privilege (not SYSASM).
+  # -------------------------------------------------------------------
+  prod-asm:
+    connect_string: "node1:1521/+ASM1"
+    username: ASMSNMP
+    password: secret
+    privilege: sysdba
+
+  # -------------------------------------------------------------------
+  # Wallet-based authentication.
+  # The wallet must contain an entry for the connect string.
+  # TNS_ADMIN is resolved from wallet_location.
+  # -------------------------------------------------------------------
+  prod-cdb-wallet:
+    connect_string: "scan-vip:1521/PRODCDB"
+    username: C##DBSNMP
+    wallet_location: /opt/oracle/wallet/prod
+
+  # -------------------------------------------------------------------
+  # Non-CDB (pre-12c or non-multitenant).
+  # pdb label will be empty in all metrics.
+  # -------------------------------------------------------------------
+  legacy-db:
+    host: 10.0.0.5
+    port: 1521
+    service: LEGACYDB
+    username: DBSNMP
+    password: secret
+
+  # -------------------------------------------------------------------
+  # Dev CDB: disable heavy collectors, collect all sysstat (no filter)
+  # -------------------------------------------------------------------
+  dev-cdb:
+    host: 10.0.0.10
+    service: DEVCDB
+    username: C##DBSNMP
+    password: devpassword
+    collectors:
+      event:
+        enabled: false
+      sysstat:
+        enabled: true
+        # no include/exclude: collect every sysstat counter
+
+
+# ---------------------------------------------------------------------------
+# Prometheus scrape config  (prometheus.yml)
+#
+# scrape_configs:
+#   - job_name: oracle
+#     static_configs:
+#       - targets: [prod-cdb, prod-asm, legacy-db, dev-cdb]
+#     relabel_configs:
+#       - source_labels: [__address__]
+#         target_label: __param_target
+#       - source_labels: [__param_target]
+#         target_label: instance
+#       - target_label: __address__
+#         replacement: localhost:9161
+# ---------------------------------------------------------------------------
