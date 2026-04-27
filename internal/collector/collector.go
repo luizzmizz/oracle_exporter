@@ -82,7 +82,7 @@ func Build(cfg config.CollectorSet, meta target.Meta) ([]Collector, error) {
 	if cfg.Tablespace.IsEnabled() {
 		collectors = append(collectors, &TablespaceCollector{isCDB: meta.IsCDB})
 	}
-	if cfg.ASMDiskgroup.IsEnabled() {
+	if cfg.ASMDiskgroup.IsExplicitlyEnabled() {
 		collectors = append(collectors, &ASMDiskgroupCollector{})
 	}
 	if cfg.Session.IsEnabled() {

@@ -113,6 +113,12 @@ func (c CollectorConfig) IsEnabled() bool {
 	return c.Enabled == nil || *c.Enabled
 }
 
+// IsExplicitlyEnabled returns true only when enabled is explicitly set to true.
+// Used for opt-in collectors (asm_diskgroup on non-ASM targets).
+func (c CollectorConfig) IsExplicitlyEnabled() bool {
+	return c.Enabled != nil && *c.Enabled
+}
+
 type Duration struct{ time.Duration }
 
 func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
