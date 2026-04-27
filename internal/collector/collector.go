@@ -86,35 +86,35 @@ func Build(cfg config.CollectorSet, meta target.Meta) ([]Collector, error) {
 		collectors = append(collectors, &ASMDiskgroupCollector{})
 	}
 	if cfg.Session.IsEnabled() {
-		collectors = append(collectors, &SessionCollector{})
+		collectors = append(collectors, &SessionCollector{isCDB: meta.IsCDB})
 	}
 	if cfg.Sysstat.IsEnabled() {
 		f, err := NewFilter(cfg.Sysstat.Include, cfg.Sysstat.Exclude)
 		if err != nil {
 			return nil, fmt.Errorf("sysstat filter: %w", err)
 		}
-		collectors = append(collectors, &SysstatCollector{filter: f})
+		collectors = append(collectors, &SysstatCollector{isCDB: meta.IsCDB, filter: f})
 	}
 	if cfg.SysWaitClass.IsEnabled() {
 		f, err := NewFilter(cfg.SysWaitClass.Include, cfg.SysWaitClass.Exclude)
 		if err != nil {
 			return nil, fmt.Errorf("syswaitclass filter: %w", err)
 		}
-		collectors = append(collectors, &SysWaitClassCollector{filter: f})
+		collectors = append(collectors, &SysWaitClassCollector{isCDB: meta.IsCDB, filter: f})
 	}
 	if cfg.SysTimeModel.IsEnabled() {
 		f, err := NewFilter(cfg.SysTimeModel.Include, cfg.SysTimeModel.Exclude)
 		if err != nil {
 			return nil, fmt.Errorf("systimemodel filter: %w", err)
 		}
-		collectors = append(collectors, &SysTimeModelCollector{filter: f})
+		collectors = append(collectors, &SysTimeModelCollector{isCDB: meta.IsCDB, filter: f})
 	}
 	if cfg.Event.IsEnabled() {
 		f, err := NewFilter(cfg.Event.Include, cfg.Event.Exclude)
 		if err != nil {
 			return nil, fmt.Errorf("event filter: %w", err)
 		}
-		collectors = append(collectors, &EventCollector{filter: f})
+		collectors = append(collectors, &EventCollector{isCDB: meta.IsCDB, filter: f})
 	}
 	if cfg.FlashRecoveryArea.IsEnabled() {
 		collectors = append(collectors, &FlashRecoveryAreaCollector{})

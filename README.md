@@ -191,9 +191,9 @@ Cumulative statistics from `gv$sysstat`. Supports `include`/`exclude` filters.
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `oracle_sysstat_value` | Counter | `inst_id`, `name` | Cumulative statistic value |
+| `oracle_sysstat_value_total` | Counter | `inst_id`, `name` | Cumulative statistic value |
 
-Use `rate(oracle_sysstat_value[5m])` in Prometheus. Counter resets on instance restart are handled automatically.
+Use `rate(oracle_sysstat_value_total[5m])` in Prometheus. Counter resets on instance restart are handled automatically.
 
 ---
 
@@ -203,8 +203,8 @@ Wait class aggregates from `gv$system_wait_class`. Supports `include`/`exclude` 
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `oracle_syswaitclass_waits_total` | Counter | `inst_id`, `wait_class` | Total wait count |
-| `oracle_syswaitclass_time_seconds_total` | Counter | `inst_id`, `wait_class` | Total wait time in seconds |
+| `oracle_wait_class_waits_total` | Counter | `inst_id`, `wait_class` | Total wait count |
+| `oracle_wait_class_time_waited_centiseconds_total` | Counter | `inst_id`, `wait_class` | Total wait time in centiseconds |
 
 ---
 
@@ -214,7 +214,7 @@ Time model statistics from `gv$sys_time_model`. Supports `include`/`exclude` fil
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `oracle_systimemodel_seconds_total` | Counter | `inst_id`, `name` | Cumulative time in seconds |
+| `oracle_time_model_microseconds_total` | Counter | `inst_id`, `name` | Cumulative time in microseconds |
 
 Key entries: `DB time`, `DB CPU`, `sql execute elapsed time`, `parse time elapsed`.
 
@@ -226,9 +226,9 @@ Wait event statistics from `gv$system_event`. Supports `include`/`exclude` filte
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `oracle_event_waits_total` | Counter | `inst_id`, `event` | Total wait count |
-| `oracle_event_time_seconds_total` | Counter | `inst_id`, `event` | Total wait time in seconds |
-| `oracle_event_timeouts_total` | Counter | `inst_id`, `event` | Total timeout count |
+| `oracle_event_waits_total` | Counter | `inst_id`, `event`, `wait_class` | Total wait count |
+| `oracle_event_time_waited_centiseconds_total` | Counter | `inst_id`, `event`, `wait_class` | Total wait time in centiseconds |
+| `oracle_event_timeouts_total` | Counter | `inst_id`, `event`, `wait_class` | Total timeout count |
 
 ---
 
