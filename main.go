@@ -40,6 +40,9 @@ func main() {
 	// prevent the exporter from serving other targets.
 	targets := make(map[string]*targetEntry, len(cfg.Targets))
 	for name, tcfg := range cfg.Targets {
+		if tcfg.UseWallet() {
+			slog.Info("using wallet auth for target", "target", name, "TNS_ADMIN", os.Getenv("TNS_ADMIN"))
+		}
 		t, err := target.Open(name, tcfg, cfg.ScrapeTimeout.Duration)
 		if err != nil {
 			slog.Warn("failed to connect to target, skipping", "target", name, "err", err)

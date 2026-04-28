@@ -15,15 +15,18 @@ type Config struct {
 }
 
 type TargetConfig struct {
-	Host           string           `yaml:"host"`
-	Port           int              `yaml:"port"`
-	Service        string           `yaml:"service"`
-	ConnectString  string           `yaml:"connect_string"`
-	Username       string           `yaml:"username"`
-	Password       string           `yaml:"password"`
-	WalletLocation string           `yaml:"wallet_location"`
-	Privilege      string           `yaml:"privilege"` // sysdba, sysasm, sysoper — required for ASM
-	Collectors     CollectorOverrides `yaml:"collectors"`
+	Host          string            `yaml:"host"`
+	Port          int               `yaml:"port"`
+	Service       string            `yaml:"service"`
+	ConnectString string            `yaml:"connect_string"`
+	Username      string            `yaml:"username"`
+	Password      string            `yaml:"password"`
+	Privilege     string            `yaml:"privilege"` // sysdba, sysasm, sysoper — required for ASM
+	Collectors    CollectorOverrides `yaml:"collectors"`
+}
+
+func (t TargetConfig) UseWallet() bool {
+	return t.Username == "" && t.Password == ""
 }
 
 // CollectorOverrides holds optional per-target collector switches.
@@ -88,9 +91,6 @@ func (t TargetConfig) DSN() string {
 		dsn += " sysoper=1"
 	case "sysasm":
 		dsn += " sysasm=1"
-	}
-	if t.WalletLocation != "" {
-		dsn += fmt.Sprintf(` walletLocation="%s"`, t.WalletLocation)
 	}
 	return dsn
 }
@@ -157,14 +157,11 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("no targets defined")
 	}
 	for name, t := range cfg.Targets {
-		if t.Username == "" && t.WalletLocation == "" {
-			return nil, fmt.Errorf("target %q: username is required (or set wallet_location)", name)
-		}
-		if t.Password == "" && t.WalletLocation == "" {
-			return nil, fmt.Errorf("target %q: password is required (or set wallet_location)", name)
-		}
 		if t.ConnectString == "" && (t.Host == "" || t.Service == "") {
 			return nil, fmt.Errorf("target %q: connect_string or host+service required", name)
+		}
+		if !t.UseWallet() && t.Password == "" {
+			return nil, fmt.Errorf("target %q: password is required when username is set", name)
 		}
 	}
 	return cfg, nil

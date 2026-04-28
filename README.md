@@ -11,11 +11,11 @@ Built with [godror](https://github.com/godror/godror) (ODPI-C) and the [Promethe
 - **Multi-target** — single process serves any number of Oracle instances via `/metrics?target=<name>`
 - **Auto-detection** — connects at startup and identifies each target as CDB, non-CDB, or ASM; adjusts queries and labels automatically
 - **RAC-aware** — uses `gv$` views; every instance appears as a separate `inst_id` label, no extra config needed
-- **CDB/PDB-aware** — uses `CDB_*` views for multitenant; every PDB appears as a `pdb` label on tablespace metrics
+- **CDB/PDB-aware** — uses `CDB_*` and `gv$con_*` views for multitenant; every PDB appears as a `pdb` label on all collectors
 - **ASM mirror-aware** — capacity metrics account for redundancy factor (EXTERN/NORMAL/HIGH) and `required_mirror_free_mb`
 - **Per-target overrides** — any collector can be enabled/disabled or filtered per target
 - **Include/exclude filters** — regex-based allowlist and denylist on high-cardinality collectors (sysstat, syswaitclass, systimemodel, event)
-- **Wallet auth** — pass `wallet_location` instead of a password
+- **Wallet auth** — omit username and password; Oracle Net uses the wallet configured via `TNS_ADMIN`
 - **Privilege support** — `sysdba`, `sysoper`, `sysasm` for ASM and admin connections
 
 ---
@@ -100,9 +100,7 @@ targets:
 
   legacy-db:
     host: 10.0.0.5
-    service: LEGACYDB
-    username: DBSNMP
-    wallet_location: /opt/oracle/wallet/legacy
+    service: LEGACYDB     # no username/password = wallet auth (TNS_ADMIN must be set)
 
   prod-cdb-dg:
     connect_string: "scan-vip:1521/PRODCDB"
@@ -119,15 +117,25 @@ targets:
 
 | Field | Required | Description |
 |---|---|---|
-| `connect_string` | yes* | Full Oracle connection string |
-| `host` + `service` | yes* | Alternative; `port` defaults to 1521 |
-| `username` | yes | Oracle account |
-| `password` | yes** | Cleartext password |
-| `wallet_location` | no | Path to wallet directory; replaces password |
+| `connect_string` | yes* | Full Oracle EZConnect string (`host:port/service`) |
+| `host` + `service` | yes* | Alternative to `connect_string`; `port` defaults to 1521 |
+| `username` | no | Oracle account; omit to use wallet auth |
+| `password` | no** | Cleartext password |
 | `privilege` | no | `sysdba`, `sysoper`, or `sysasm` |
 
 \* Either `connect_string` or `host`+`service` is required.  
-\*\* Required unless `wallet_location` is set.
+\*\* Required when `username` is set. Omit both to use wallet auth.
+
+#### Wallet authentication
+
+When neither `username` nor `password` is specified, the exporter uses Oracle Net wallet authentication. Oracle Net resolves credentials from the wallet configured in `sqlnet.ora`, which is located via the `TNS_ADMIN` environment variable.
+
+Minimal setup:
+- `TNS_ADMIN` set in the service environment (e.g. systemd `Environment=TNS_ADMIN=/etc/oracle_exporter/wallet`)
+- `$TNS_ADMIN/sqlnet.ora` containing `SQLNET.WALLET_OVERRIDE = TRUE` and `WALLET_LOCATION`
+- `$TNS_ADMIN/cwallet.sso` with a credential entry for each wallet-auth target
+
+One wallet covers all wallet-auth targets in the same exporter instance.
 
 ---
 
@@ -179,9 +187,10 @@ Redundancy factors applied to `(total_mb - required_mirror_free_mb)`: EXTERN÷1,
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `oracle_session_count` | Gauge | `inst_id`, `status`, `type` | Sessions grouped by instance, status and type |
+| `oracle_session_count` | Gauge | `inst_id`, `pdb`, `status`, `type` | Sessions grouped by instance, PDB, status and type |
 
-Source: `gv$session`.
+CDB: `gv$session` joined with `v$containers` for PDB name.  
+non-CDB: `gv$session`, `pdb` is empty.
 
 ---
 
@@ -191,9 +200,12 @@ Cumulative statistics from `gv$sysstat`. Supports `include`/`exclude` filters.
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `oracle_sysstat_value_total` | Counter | `inst_id`, `name` | Cumulative statistic value |
+| `oracle_sysstat_value_total` | Counter | `inst_id`, `pdb`, `name` | Cumulative statistic value |
 
-Use `rate(oracle_sysstat_value_total[5m])` in Prometheus. Counter resets on instance restart are handled automatically.
+CDB: `gv$con_sysstat` joined with `v$containers`.  
+non-CDB: `gv$sysstat`, `pdb` is empty.
+
+Use `rate(oracle_sysstat_value_total[10m])` in Prometheus. Counter resets on instance restart are handled automatically.
 
 ---
 
@@ -203,8 +215,11 @@ Wait class aggregates from `gv$system_wait_class`. Supports `include`/`exclude` 
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `oracle_wait_class_waits_total` | Counter | `inst_id`, `wait_class` | Total wait count |
-| `oracle_wait_class_time_waited_centiseconds_total` | Counter | `inst_id`, `wait_class` | Total wait time in centiseconds |
+| `oracle_wait_class_waits_total` | Counter | `inst_id`, `pdb`, `wait_class` | Total wait count |
+| `oracle_wait_class_time_waited_centiseconds_total` | Counter | `inst_id`, `pdb`, `wait_class` | Total wait time in centiseconds |
+
+CDB: `gv$con_system_wait_class` joined with `v$containers`.  
+non-CDB: `gv$system_wait_class`, `pdb` is empty.
 
 ---
 
@@ -214,7 +229,10 @@ Time model statistics from `gv$sys_time_model`. Supports `include`/`exclude` fil
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `oracle_time_model_microseconds_total` | Counter | `inst_id`, `name` | Cumulative time in microseconds |
+| `oracle_time_model_microseconds_total` | Counter | `inst_id`, `pdb`, `name` | Cumulative time in microseconds |
+
+CDB: `gv$con_sys_time_model` joined with `v$containers`.  
+non-CDB: `gv$sys_time_model`, `pdb` is empty.
 
 Key entries: `DB time`, `DB CPU`, `sql execute elapsed time`, `parse time elapsed`.
 
@@ -226,9 +244,12 @@ Wait event statistics from `gv$system_event`. Supports `include`/`exclude` filte
 
 | Metric | Type | Labels | Description |
 |---|---|---|---|
-| `oracle_event_waits_total` | Counter | `inst_id`, `event`, `wait_class` | Total wait count |
-| `oracle_event_time_waited_centiseconds_total` | Counter | `inst_id`, `event`, `wait_class` | Total wait time in centiseconds |
-| `oracle_event_timeouts_total` | Counter | `inst_id`, `event`, `wait_class` | Total timeout count |
+| `oracle_event_waits_total` | Counter | `inst_id`, `pdb`, `event`, `wait_class` | Total wait count |
+| `oracle_event_time_waited_centiseconds_total` | Counter | `inst_id`, `pdb`, `event`, `wait_class` | Total wait time in centiseconds |
+| `oracle_event_timeouts_total` | Counter | `inst_id`, `pdb`, `event`, `wait_class` | Total timeout count |
+
+CDB: `gv$con_system_event` joined with `v$containers`.  
+non-CDB: `gv$system_event`, `pdb` is empty.
 
 ---
 
