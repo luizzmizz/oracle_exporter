@@ -74,7 +74,13 @@ func (t TargetConfig) DSN() string {
 		}
 		cs = fmt.Sprintf("%s:%d/%s", t.Host, port, t.Service)
 	}
-	dsn := fmt.Sprintf(`user="%s" password="%s" connectString="%s"`, t.Username, t.Password, cs)
+	dsn := fmt.Sprintf(`connectString="%s"`, cs)
+	if t.Username != "" {
+		dsn = fmt.Sprintf(`user="%s" `, t.Username) + dsn
+	}
+	if t.Password != "" {
+		dsn += fmt.Sprintf(` password="%s"`, t.Password)
+	}
 	switch t.Privilege {
 	case "sysdba":
 		dsn += " sysdba=1"
@@ -151,8 +157,8 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("no targets defined")
 	}
 	for name, t := range cfg.Targets {
-		if t.Username == "" {
-			return nil, fmt.Errorf("target %q: username is required", name)
+		if t.Username == "" && t.WalletLocation == "" {
+			return nil, fmt.Errorf("target %q: username is required (or set wallet_location)", name)
 		}
 		if t.Password == "" && t.WalletLocation == "" {
 			return nil, fmt.Errorf("target %q: password is required (or set wallet_location)", name)
