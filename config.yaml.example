@@ -21,7 +21,7 @@ collectors:
     enabled: true
 
   asm_diskgroup:
-    enabled: true     # ASM targets only run this one; ignored on DB targets unless explicitly enabled
+    enabled: true     # auto-runs on ASM targets; also runs on DB targets when enabled here or per-target
 
   session:
     enabled: true
@@ -103,12 +103,19 @@ collectors:
 #   privilege: sysoper           connect AS SYSOPER
 #   privilege: sysasm            connect AS SYSASM  (rarely needed; use sysdba instead)
 #
-# Per-target collector overrides:
+# Extra labels attached to every metric for this target:
+#   labels:
+#     environment: prod          any key/value pair; useful for Grafana/Alertmanager filtering
+#     team: dba
+#
+# Per-target collector overrides — two syntaxes:
 #   collectors:
-#     <collector_name>:
-#       enabled: true|false      override the global enabled flag
-#       include: [...]           override the global include list
-#       exclude: [...]           override the global exclude list
+#     <name>: true|false         shorthand — just enable or disable
+#     <name>:                    full override — replace specific global fields
+#       enabled: true|false
+#       include: [...]           replaces the global include list for this target
+#       exclude: [...]           replaces the global exclude list for this target
+#   Absent fields inherit the global value. Only the fields you specify are replaced.
 #
 # Auto-detection (no config needed):
 #   Instance name starts with +ASM  → ASM target; only asm_diskgroup runs
@@ -127,6 +134,8 @@ targets:
     connect_string: "scan-vip:1521/PRODCDB"
     username: C##DBSNMP
     password: secret
+    labels:
+      environment: prod
 
   # -------------------------------------------------------------------
   # CDB with Data Guard: enable dataguard only on this target
@@ -171,19 +180,34 @@ targets:
     password: secret
 
   # -------------------------------------------------------------------
-  # Dev CDB: disable heavy collectors, collect all sysstat (no filter)
+  # DB target with ASM on the same host: enable asm_diskgroup directly
+  # on the DB connection (shorthand syntax).
+  # -------------------------------------------------------------------
+  prod-db-with-asm:
+    connect_string: "dbhost:1521/PRODDB"
+    username: DBSNMP
+    password: secret
+    labels:
+      environment: prod
+    collectors:
+      asm_diskgroup: true
+
+  # -------------------------------------------------------------------
+  # Dev CDB: disable event (shorthand), narrow sysstat to all counters
+  # (full override syntax, dropping the global include filter).
   # -------------------------------------------------------------------
   dev-cdb:
     host: 10.0.0.10
     service: DEVCDB
     username: C##DBSNMP
     password: devpassword
+    labels:
+      environment: dev
     collectors:
-      event:
-        enabled: false
+      event: false
       sysstat:
+        # no include/exclude: collect every sysstat counter (overrides global filter)
         enabled: true
-        # no include/exclude: collect every sysstat counter
 
 
 # ---------------------------------------------------------------------------

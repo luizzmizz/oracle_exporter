@@ -22,6 +22,7 @@ type TargetConfig struct {
 	Username      string            `yaml:"username"`
 	Password      string            `yaml:"password"`
 	Privilege     string            `yaml:"privilege"` // sysdba, sysasm, sysoper — required for ASM
+	Labels        map[string]string `yaml:"labels"`
 	Collectors    CollectorOverrides `yaml:"collectors"`
 }
 
@@ -29,27 +30,71 @@ func (t TargetConfig) UseWallet() bool {
 	return t.Username == "" && t.Password == ""
 }
 
-// CollectorOverrides holds optional per-target collector switches.
+// CollectorOverride is a per-target override for a single collector.
+// In YAML it accepts either a bare bool (enable/disable shorthand) or a struct
+// with optional enabled/include/exclude fields that replace the global values.
+//
+//	asm_diskgroup: true                  # shorthand — just enable
+//	sysstat:                             # full override
+//	  enabled: true
+//	  include: ["^user commits$"]
+type CollectorOverride struct {
+	Enabled *bool
+	Include []string
+	Exclude []string
+}
+
+func (c *CollectorOverride) UnmarshalYAML(value *yaml.Node) error {
+	var b bool
+	if err := value.Decode(&b); err == nil {
+		c.Enabled = &b
+		return nil
+	}
+	var s struct {
+		Enabled *bool    `yaml:"enabled"`
+		Include []string `yaml:"include"`
+		Exclude []string `yaml:"exclude"`
+	}
+	if err := value.Decode(&s); err != nil {
+		return err
+	}
+	c.Enabled = s.Enabled
+	c.Include = s.Include
+	c.Exclude = s.Exclude
+	return nil
+}
+
+// CollectorOverrides holds optional per-target collector overrides.
 // A nil pointer means "inherit from global default".
 type CollectorOverrides struct {
-	Tablespace        *bool `yaml:"tablespace"`
-	ASMDiskgroup      *bool `yaml:"asm_diskgroup"`
-	Session           *bool `yaml:"session"`
-	Sysstat           *bool `yaml:"sysstat"`
-	SysWaitClass      *bool `yaml:"syswaitclass"`
-	SysTimeModel      *bool `yaml:"systimemodel"`
-	Event             *bool `yaml:"event"`
-	FlashRecoveryArea *bool `yaml:"flash_recovery_area"`
-	Uptime            *bool `yaml:"uptime"`
-	Dataguard         *bool `yaml:"dataguard"`
-	Sanity            *bool `yaml:"sanity"`
+	Tablespace        *CollectorOverride `yaml:"tablespace"`
+	ASMDiskgroup      *CollectorOverride `yaml:"asm_diskgroup"`
+	Session           *CollectorOverride `yaml:"session"`
+	Sysstat           *CollectorOverride `yaml:"sysstat"`
+	SysWaitClass      *CollectorOverride `yaml:"syswaitclass"`
+	SysTimeModel      *CollectorOverride `yaml:"systimemodel"`
+	Event             *CollectorOverride `yaml:"event"`
+	FlashRecoveryArea *CollectorOverride `yaml:"flash_recovery_area"`
+	Uptime            *CollectorOverride `yaml:"uptime"`
+	Dataguard         *CollectorOverride `yaml:"dataguard"`
+	Sanity            *CollectorOverride `yaml:"sanity"`
 }
 
 // Apply merges per-target overrides on top of the global CollectorSet.
+// Fields present in the override replace the global value; absent fields inherit it.
 func (o CollectorOverrides) Apply(base CollectorSet) CollectorSet {
-	apply := func(override *bool, cfg CollectorConfig) CollectorConfig {
-		if override != nil {
-			cfg.Enabled = override
+	apply := func(override *CollectorOverride, cfg CollectorConfig) CollectorConfig {
+		if override == nil {
+			return cfg
+		}
+		if override.Enabled != nil {
+			cfg.Enabled = override.Enabled
+		}
+		if override.Include != nil {
+			cfg.Include = override.Include
+		}
+		if override.Exclude != nil {
+			cfg.Exclude = override.Exclude
 		}
 		return cfg
 	}

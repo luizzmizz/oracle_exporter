@@ -29,10 +29,30 @@ func (c *SessionCollector) Update(ctx context.Context, db *sql.DB, ch chan<- pro
 
 func (c *SessionCollector) updateCDB(ctx context.Context, db *sql.DB, ch chan<- prometheus.Metric) error {
 	rows, err := db.QueryContext(ctx, `
-		SELECT s.inst_id, NVL(con.name, ''), LOWER(s.status), LOWER(s.type), COUNT(*)
-		FROM gv$session s
-		LEFT JOIN v$containers con ON s.con_id = con.con_id
-		GROUP BY s.inst_id, con.name, s.status, s.type
+		SELECT i.inst_id, c.name, st.status, 'user', COUNT(s.sid)
+		FROM (SELECT DISTINCT inst_id FROM gv$instance) i
+		CROSS JOIN (
+			SELECT con_id, name FROM v$containers
+			WHERE open_mode != 'MOUNTED'
+			  AND con_id > 0
+			  AND name != 'PDB$SEED'
+		) c
+		CROSS JOIN (
+			SELECT 'active'   AS status FROM dual
+			UNION ALL
+			SELECT 'inactive' FROM dual
+		) st
+		LEFT JOIN gv$session s
+			ON  s.inst_id       = i.inst_id
+			AND s.con_id        = c.con_id
+			AND LOWER(s.status) = st.status
+			AND LOWER(s.type)   = 'user'
+		GROUP BY i.inst_id, c.name, st.status
+		UNION ALL
+		SELECT inst_id, '', LOWER(status), LOWER(type), COUNT(*)
+		FROM gv$session
+		WHERE LOWER(type) != 'user'
+		GROUP BY inst_id, status, type
 	`)
 	if err != nil {
 		return err

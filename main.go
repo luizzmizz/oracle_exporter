@@ -54,7 +54,7 @@ func main() {
 			t.DB.Close()
 			continue
 		}
-		targets[name] = &targetEntry{target: t, collectors: collectors}
+		targets[name] = &targetEntry{target: t, collectors: collectors, labels: prometheus.Labels(tcfg.Labels)}
 		slog.Info("target ready",
 			"target", name,
 			"db", t.Meta.DBName,
@@ -71,12 +71,14 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", metricsHandler(targets, cfg, logger))
+	mux.Handle("/info", infoHandler(targets, cfg, logger))
 	mux.HandleFunc("/targets", listTargets(targets))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(w, `<html><head><title>Oracle Exporter</title></head><body>
 <h1>Oracle Exporter</h1>
 <p><a href="/targets">Configured targets</a></p>
 <p>Metrics: <code>/metrics?target=&lt;name&gt;</code></p>
+<p>Info (instance, PDBs, patches): <code>/info?target=&lt;name&gt;</code></p>
 </body></html>`)
 	})
 
@@ -90,6 +92,7 @@ func main() {
 type targetEntry struct {
 	target     *target.Target
 	collectors []collector.Collector
+	labels     prometheus.Labels
 }
 
 func metricsHandler(targets map[string]*targetEntry, cfg *config.Config, logger *slog.Logger) http.HandlerFunc {
@@ -106,8 +109,39 @@ func metricsHandler(targets map[string]*targetEntry, cfg *config.Config, logger 
 		}
 
 		reg := prometheus.NewRegistry()
-		reg.MustRegister(
+		registerer := prometheus.Registerer(reg)
+		if len(entry.labels) > 0 {
+			registerer = prometheus.WrapRegistererWith(entry.labels, reg)
+		}
+		registerer.MustRegister(
 			collector.NewOracleCollector(entry.target.DB, entry.collectors, cfg.ScrapeTimeout.Duration, logger),
+		)
+		promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}).ServeHTTP(w, r)
+	}
+}
+
+func infoHandler(targets map[string]*targetEntry, cfg *config.Config, logger *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := r.URL.Query().Get("target")
+		if name == "" {
+			http.Error(w, "missing ?target= parameter", http.StatusBadRequest)
+			return
+		}
+		entry, ok := targets[name]
+		if !ok {
+			http.Error(w, fmt.Sprintf("unknown target %q", name), http.StatusNotFound)
+			return
+		}
+
+		reg := prometheus.NewRegistry()
+		registerer := prometheus.Registerer(reg)
+		if len(entry.labels) > 0 {
+			registerer = prometheus.WrapRegistererWith(entry.labels, reg)
+		}
+		registerer.MustRegister(
+			collector.NewOracleCollector(entry.target.DB, []collector.Collector{
+				collector.NewInfoCollector(entry.target.Meta.IsCDB),
+			}, cfg.ScrapeTimeout.Duration, logger),
 		)
 		promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}).ServeHTTP(w, r)
 	}
