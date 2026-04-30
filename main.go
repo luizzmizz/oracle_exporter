@@ -65,8 +65,7 @@ func main() {
 	}
 
 	if len(targets) == 0 {
-		slog.Error("no targets available, exiting")
-		os.Exit(1)
+		slog.Warn("no targets available at startup; serving empty target list")
 	}
 
 	mux := http.NewServeMux()
