@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -72,6 +73,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", metricsHandler(targets, cfg, logger))
 	mux.Handle("/info", infoHandler(targets, cfg, logger))
+	mux.Handle("/probe", probeHandler(targets, cfg))
 	mux.HandleFunc("/targets", listTargets(targets))
 	mux.HandleFunc("/-/healthy", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -83,6 +85,7 @@ func main() {
 <p><a href="/targets">Configured targets</a></p>
 <p>Metrics: <code>/metrics?target=&lt;name&gt;</code></p>
 <p>Info (instance, PDBs, patches): <code>/info?target=&lt;name&gt;</code></p>
+<p>Probe (connectivity only): <code>/probe?target=&lt;name&gt;</code></p>
 </body></html>`)
 	})
 
@@ -154,6 +157,19 @@ func (e *targetEntry) connect() {
 	e.mu.Unlock()
 }
 
+var oracleUpDesc = prometheus.NewDesc(
+	"oracle_up",
+	"1 if the exporter has an active connection to the Oracle target, 0 otherwise",
+	nil, nil,
+)
+
+type upCollector struct{ up float64 }
+
+func (u *upCollector) Describe(ch chan<- *prometheus.Desc) { ch <- oracleUpDesc }
+func (u *upCollector) Collect(ch chan<- prometheus.Metric) {
+	ch <- prometheus.MustNewConstMetric(oracleUpDesc, prometheus.GaugeValue, u.up)
+}
+
 func metricsHandler(targets map[string]*targetEntry, cfg *config.Config, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		name := r.URL.Query().Get("target")
@@ -166,18 +182,22 @@ func metricsHandler(targets map[string]*targetEntry, cfg *config.Config, logger 
 			http.Error(w, fmt.Sprintf("unknown target %q", name), http.StatusNotFound)
 			return
 		}
-		t, collectors := entry.get()
-		if t == nil {
-			http.Error(w, fmt.Sprintf("target %q is not connected", name), http.StatusServiceUnavailable)
-			return
-		}
 
 		reg := prometheus.NewRegistry()
 		registerer := prometheus.Registerer(reg)
 		if len(entry.labels) > 0 {
 			registerer = prometheus.WrapRegistererWith(entry.labels, reg)
 		}
+
+		t, collectors := entry.get()
+		if t == nil {
+			registerer.MustRegister(&upCollector{0})
+			promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}).ServeHTTP(w, r)
+			return
+		}
+
 		registerer.MustRegister(
+			&upCollector{1},
 			collector.NewOracleCollector(t.DB, collectors, cfg.ScrapeTimeout.Duration, logger),
 		)
 		promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}).ServeHTTP(w, r)
@@ -198,7 +218,13 @@ func infoHandler(targets map[string]*targetEntry, cfg *config.Config, logger *sl
 		}
 		t, _ := entry.get()
 		if t == nil {
-			http.Error(w, fmt.Sprintf("target %q is not connected", name), http.StatusServiceUnavailable)
+			reg := prometheus.NewRegistry()
+			registerer := prometheus.Registerer(reg)
+			if len(entry.labels) > 0 {
+				registerer = prometheus.WrapRegistererWith(entry.labels, reg)
+			}
+			registerer.MustRegister(&upCollector{0})
+			promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}).ServeHTTP(w, r)
 			return
 		}
 
@@ -212,6 +238,39 @@ func infoHandler(targets map[string]*targetEntry, cfg *config.Config, logger *sl
 				collector.NewInfoCollector(t.Meta.IsCDB),
 			}, cfg.ScrapeTimeout.Duration, logger),
 		)
+		promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}).ServeHTTP(w, r)
+	}
+}
+
+func probeHandler(targets map[string]*targetEntry, cfg *config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		name := r.URL.Query().Get("target")
+		if name == "" {
+			http.Error(w, "missing ?target= parameter", http.StatusBadRequest)
+			return
+		}
+		entry, ok := targets[name]
+		if !ok {
+			http.Error(w, fmt.Sprintf("unknown target %q", name), http.StatusNotFound)
+			return
+		}
+
+		reg := prometheus.NewRegistry()
+		registerer := prometheus.Registerer(reg)
+		if len(entry.labels) > 0 {
+			registerer = prometheus.WrapRegistererWith(entry.labels, reg)
+		}
+
+		up := 0.0
+		t, _ := entry.get()
+		if t != nil {
+			ctx, cancel := context.WithTimeout(r.Context(), cfg.ConnectTimeout.Duration)
+			defer cancel()
+			if t.DB.PingContext(ctx) == nil {
+				up = 1.0
+			}
+		}
+		registerer.MustRegister(&upCollector{up})
 		promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}).ServeHTTP(w, r)
 	}
 }
