@@ -72,6 +72,10 @@ func main() {
 	mux.Handle("/metrics", metricsHandler(targets, cfg, logger))
 	mux.Handle("/info", infoHandler(targets, cfg, logger))
 	mux.HandleFunc("/targets", listTargets(targets))
+	mux.HandleFunc("/-/healthy", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = fmt.Fprintln(w, "OK")
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(w, `<html><head><title>Oracle Exporter</title></head><body>
 <h1>Oracle Exporter</h1>
