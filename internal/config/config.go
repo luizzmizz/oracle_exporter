@@ -9,9 +9,10 @@ import (
 )
 
 type Config struct {
-	ScrapeTimeout Duration               `yaml:"scrape_timeout"`
-	Collectors    CollectorSet           `yaml:"collectors"`
-	Targets       map[string]TargetConfig `yaml:"targets"`
+	ScrapeTimeout  Duration                `yaml:"scrape_timeout"`
+	ConnectTimeout Duration                `yaml:"connect_timeout"`
+	Collectors     CollectorSet            `yaml:"collectors"`
+	Targets        map[string]TargetConfig `yaml:"targets"`
 }
 
 type TargetConfig struct {
@@ -192,7 +193,8 @@ func Load(path string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		ScrapeTimeout: Duration{30 * time.Second},
+		ScrapeTimeout:  Duration{30 * time.Second},
+		ConnectTimeout: Duration{10 * time.Second},
 	}
 
 	if err := yaml.Unmarshal(data, cfg); err != nil {
