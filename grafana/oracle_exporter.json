@@ -42,16 +42,32 @@
         "type": "datasource"
       },
       {
+        "allValue": ".*",
+        "current": {"selected": true, "text": "All", "value": "$__all"},
+        "datasource": {"type": "prometheus", "uid": "${datasource}"},
+        "definition": "label_values(oracle_scrape_collector_success, site)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Site",
+        "multi": false,
+        "name": "site",
+        "options": [],
+        "query": {"query": "label_values(oracle_scrape_collector_success, site)", "refId": "StandardVariableQuery"},
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
         "current": {},
         "datasource": {"type": "prometheus", "uid": "${datasource}"},
-        "definition": "label_values(oracle_scrape_collector_success, instance)",
+        "definition": "label_values(oracle_scrape_collector_success{site=~\"$site\"}, instance)",
         "hide": 0,
         "includeAll": false,
-        "label": "Target",
+        "label": "Database",
         "multi": false,
         "name": "instance",
         "options": [],
-        "query": {"query": "label_values(oracle_scrape_collector_success, instance)", "refId": "StandardVariableQuery"},
+        "query": {"query": "label_values(oracle_scrape_collector_success{site=~\"$site\"}, instance)", "refId": "StandardVariableQuery"},
         "refresh": 2,
         "regex": "",
         "sort": 1,
@@ -64,7 +80,7 @@
         "definition": "label_values(oracle_session_count{instance=\"$instance\"}, inst_id)",
         "hide": 0,
         "includeAll": true,
-        "label": "RAC Node",
+        "label": "Instance ID",
         "multi": false,
         "name": "inst_id",
         "options": [],
@@ -119,7 +135,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 7, "x": 0, "y": 1},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 1},
       "id": 2,
       "options": {
         "colorMode": "background",
@@ -133,7 +149,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "oracle_instance_uptime_seconds{instance=\"$instance\", inst_id=~\"$inst_id\"}",
-          "legendFormat": "inst {{inst_id}}  {{instance_name}}  {{version}}  ({{status}})",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         }
       ],
@@ -159,7 +175,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 5, "x": 7, "y": 1},
+      "gridPos": {"h": 8, "w": 11, "x": 8, "y": 1},
       "id": 3,
       "options": {
         "colorMode": "background",
@@ -173,7 +189,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "sum by (inst_id) (oracle_session_count{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", status=\"active\"})",
-          "legendFormat": "inst {{inst_id}} active",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         }
       ],
@@ -219,7 +235,7 @@
           }
         ]
       },
-      "gridPos": {"h": 4, "w": 12, "x": 12, "y": 1},
+      "gridPos": {"h": 8, "w": 5, "x": 19, "y": 1},
       "id": 4,
       "options": {
         "cellHeight": "sm",
@@ -253,19 +269,16 @@
           "id": "organize",
           "options": {
             "excludeByName": {
-              "Time": true,
-              "Time 1": true,
-              "__name__": true,
-              "__name__ 1": true,
-              "instance": true,
-              "instance 1": true,
-              "job": true,
-              "job 1": true
+              "Time": true, "Time 1": true,
+              "__name__": true, "__name__ 1": true,
+              "instance": true, "instance 1": true,
+              "job": true, "job 1": true,
+              "site": true, "site 1": true
             },
             "renameByName": {
               "collector": "Collector",
-              "Value": "Status",
-              "Value 1": "Duration"
+              "Value #A": "Status",
+              "Value #B": "Duration"
             }
           }
         }
@@ -274,10 +287,219 @@
     },
 
     {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "inst_id"},
+            "properties": [{"id": "displayName", "value": "Node"}, {"id": "custom.width", "value": 60}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "instance_name"},
+            "properties": [{"id": "displayName", "value": "Name"}, {"id": "custom.width", "value": 120}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "version"},
+            "properties": [{"id": "displayName", "value": "Version"}, {"id": "custom.width", "value": 110}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "is_cdb"},
+            "properties": [{"id": "displayName", "value": "CDB"}, {"id": "custom.width", "value": 60}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "status"},
+            "properties": [
+              {"id": "displayName", "value": "Status"},
+              {"id": "custom.width", "value": 80},
+              {
+                "id": "mappings",
+                "value": [
+                  {"options": {"open": {"color": "green", "index": 0, "text": "OPEN"}}, "type": "value"}
+                ]
+              },
+              {"id": "custom.displayMode", "value": "color-background"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "site"},
+            "properties": [{"id": "displayName", "value": "Site"}, {"id": "custom.width", "value": 45}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Uptime"},
+            "properties": [{"id": "unit", "value": "s"}, {"id": "custom.width", "value": 100}]
+          }
+        ]
+      },
+      "gridPos": {"h": 5, "w": 7, "x": 0, "y": 9},
+      "id": 32,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "last_over_time(oracle_instance_info{instance=\"$instance\", inst_id=~\"$inst_id\"}[25h])",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Instance Info",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true, "__name__": true, "job": true, "instance": true
+            },
+            "renameByName": {"Value": "Uptime"}
+          }
+        }
+      ],
+      "type": "table"
+    },
+
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "pdb"},
+            "properties": [{"id": "displayName", "value": "PDB"}, {"id": "custom.width", "value": 130}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "open_mode"},
+            "properties": [
+              {"id": "displayName", "value": "Open Mode"},
+              {"id": "custom.width", "value": 120},
+              {
+                "id": "mappings",
+                "value": [
+                  {"options": {"READ WRITE": {"color": "green", "index": 0}}, "type": "value"}
+                ]
+              },
+              {"id": "custom.displayMode", "value": "color-background"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "restricted"},
+            "properties": [{"id": "displayName", "value": "Restricted"}, {"id": "custom.width", "value": 90}]
+          }
+        ]
+      },
+      "gridPos": {"h": 5, "w": 5, "x": 7, "y": 9},
+      "id": 33,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "last_over_time(oracle_pdb_info{instance=\"$instance\"}[25h])",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "PDBs",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true, "__name__": true, "job": true, "instance": true, "Value": true
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "action"},
+            "properties": [{"id": "displayName", "value": "Action"}, {"id": "custom.width", "value": 60}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "action_time"},
+            "properties": [{"id": "displayName", "value": "Applied At"}, {"id": "custom.width", "value": 150}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "description"},
+            "properties": [{"id": "displayName", "value": "Description"}, {"id": "custom.minWidth", "value": 200}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "patch_id"},
+            "properties": [{"id": "displayName", "value": "Patch ID"}, {"id": "custom.width", "value": 90}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "site"},
+            "properties": [{"id": "displayName", "value": "Site"}, {"id": "custom.width", "value": 45}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "status"},
+            "properties": [
+              {"id": "displayName", "value": "Status"},
+              {"id": "custom.width", "value": 60},
+              {
+                "id": "mappings",
+                "value": [
+                  {"options": {"success": {"color": "green", "index": 0, "text": "OK"}}, "type": "value"}
+                ]
+              },
+              {"id": "custom.displayMode", "value": "color-background"}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 5, "w": 12, "x": 12, "y": 9},
+      "id": 34,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
+        "showHeader": true,
+        "sortBy": [{"desc": true, "displayName": "Applied At"}]
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "last_over_time(oracle_sqlpatch_info{instance=\"$instance\"}[25h])",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Applied Patches",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true, "__name__": true, "job": true, "instance": true, "Value": true
+            },
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+
+    {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14},
       "id": 5,
-      "title": "Tablespace",
+      "title": "Tablespace & ASM",
       "type": "row"
     },
 
@@ -285,8 +507,7 @@
       "datasource": {"type": "prometheus", "uid": "${datasource}"},
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "thresholds"},
-          "mappings": [],
+          "color": {"mode": "continuous-GrYlRd"},
           "max": 100,
           "min": 0,
           "thresholds": {
@@ -301,35 +522,49 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 6},
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 15},
       "id": 6,
       "options": {
-        "displayMode": "gradient",
-        "minVizHeight": 10,
-        "minVizWidth": 0,
+        "barWidth": 0.8,
+        "fillOpacity": 80,
+        "gradientMode": "scheme",
+        "groupWidth": 0.7,
+        "legend": {"displayMode": "hidden", "placement": "bottom", "showLegend": false},
         "orientation": "horizontal",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "showUnfilled": true,
-        "valueMode": "color"
+        "tooltip": {"mode": "all", "sort": "none"},
+        "xField": "PDB:Tablespace",
+        "colorByField": "Usage %"
       },
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sort_desc(\n  oracle_tablespace_used_bytes{instance=\"$instance\", pdb=~\"$pdb\"}\n  /\n  oracle_tablespace_total_bytes{instance=\"$instance\", pdb=~\"$pdb\"}\n  * 100\n)",
-          "legendFormat": "{{pdb}} / {{tablespace}}  ({{contents}})",
+          "expr": "sort_desc(label_join(oracle_tablespace_used_bytes{instance=\"$instance\",pdb=~\"$pdb\"} / oracle_tablespace_total_bytes{instance=\"$instance\",pdb=~\"$pdb\"} * 100, \"ts_label\", \":\", \"pdb\", \"tablespace\"))",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
           "refId": "A"
         }
       ],
       "title": "Tablespace Usage %",
-      "type": "bargauge"
-    },
-
-    {
-      "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 16},
-      "id": 7,
-      "title": "ASM Diskgroups",
-      "type": "row"
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true, "__name__": true, "job": true, "instance": true,
+              "site": true, "pdb": true, "tablespace": true
+            },
+            "renameByName": {
+              "ts_label": "PDB:Tablespace",
+              "contents": "Type",
+              "status": "Status",
+              "autoextensible": "Autoext.",
+              "Value": "Usage %"
+            }
+          }
+        }
+      ],
+      "type": "barchart"
     },
 
     {
@@ -352,27 +587,46 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 6, "w": 16, "x": 0, "y": 17},
+      "gridPos": {"h": 7, "w": 12, "x": 12, "y": 15},
       "id": 8,
       "options": {
-        "displayMode": "gradient",
-        "minVizHeight": 10,
-        "minVizWidth": 0,
+        "barWidth": 0.8,
+        "fillOpacity": 80,
+        "gradientMode": "scheme",
+        "groupWidth": 0.7,
+        "legend": {"displayMode": "hidden", "placement": "bottom", "showLegend": false},
         "orientation": "horizontal",
-        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
-        "showUnfilled": true,
-        "valueMode": "color"
+        "tooltip": {"mode": "single", "sort": "none"},
+        "xField": "Diskgroup",
+        "colorByField": "Usage %"
       },
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "sort_desc(\n  oracle_asm_diskgroup_used_bytes{instance=\"$instance\"}\n  /\n  oracle_asm_diskgroup_total_bytes{instance=\"$instance\"}\n  * 100\n)",
-          "legendFormat": "{{diskgroup}}  ({{type}})",
+          "expr": "sort_desc(\n  oracle_asm_diskgroup_used_bytes{instance=\"$instance\"}\n  / oracle_asm_diskgroup_total_bytes{instance=\"$instance\"}\n  * 100\n)",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
           "refId": "A"
         }
       ],
       "title": "ASM Diskgroup Usage %  (mirror-aware)",
-      "type": "bargauge"
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true, "__name__": true, "job": true, "instance": true, "site": true, "state": true
+            },
+            "renameByName": {
+              "diskgroup": "Diskgroup",
+              "type": "Redundancy",
+              "Value": "Usage %"
+            }
+          }
+        }
+      ],
+      "type": "barchart"
     },
 
     {
@@ -392,7 +646,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 17},
+      "gridPos": {"h": 3, "w": 12, "x": 12, "y": 22},
       "id": 9,
       "options": {
         "colorMode": "background",
@@ -416,7 +670,7 @@
 
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 23},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 25},
       "id": 10,
       "title": "Sessions",
       "type": "row"
@@ -452,7 +706,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 26},
       "id": 11,
       "options": {
         "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -462,7 +716,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "oracle_session_count{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"}",
-          "legendFormat": "{{pdb}}  inst {{inst_id}}  {{status}}",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         }
       ],
@@ -500,7 +754,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 26},
       "id": 12,
       "options": {
         "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -510,7 +764,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "sum by (inst_id, pdb, type) (oracle_session_count{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"})",
-          "legendFormat": "{{pdb}}  inst {{inst_id}}  {{type}}",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         }
       ],
@@ -520,7 +774,7 @@
 
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 32},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 34},
       "id": 13,
       "title": "Activity",
       "type": "row"
@@ -556,7 +810,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 33},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 35},
       "id": 14,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -566,21 +820,14 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"physical reads\"}[10m])",
-          "legendFormat": "inst {{inst_id}}  physical reads",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"physical writes\"}[10m])",
-          "legendFormat": "inst {{inst_id}}  physical writes",
+          "legendFormat": "{{__auto}}",
           "refId": "B"
-        },
-        {
-          "datasource": {"type": "prometheus", "uid": "${datasource}"},
-          "expr": "rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"physical read bytes\"}[10m])",
-          "legendFormat": "inst {{inst_id}}  physical read bytes",
-          "refId": "C",
-          "hide": true
         }
       ],
       "title": "Physical I/O",
@@ -617,7 +864,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 33},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 35},
       "id": 15,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -627,25 +874,25 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"user commits\"}[10m])",
-          "legendFormat": "inst {{inst_id}}  commits",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         },
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"user rollbacks\"}[10m])",
-          "legendFormat": "inst {{inst_id}}  rollbacks",
+          "legendFormat": "{{__auto}}",
           "refId": "B"
         },
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"execute count\"}[10m])",
-          "legendFormat": "inst {{inst_id}}  executes",
+          "legendFormat": "{{__auto}}",
           "refId": "C"
         },
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=~\"parse count.*hard\"}[10m])",
-          "legendFormat": "inst {{inst_id}}  hard parses",
+          "legendFormat": "{{__auto}}",
           "refId": "D"
         }
       ],
@@ -655,7 +902,7 @@
 
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 41},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 43},
       "id": 16,
       "title": "Wait Classes",
       "type": "row"
@@ -691,7 +938,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 42},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 44},
       "id": 17,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true},
@@ -701,7 +948,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "rate(oracle_wait_class_time_waited_centiseconds_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"}[10m]) / 100",
-          "legendFormat": "inst {{inst_id}}  {{wait_class}}",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         }
       ],
@@ -711,7 +958,7 @@
 
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 50},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 52},
       "id": 18,
       "title": "Time Model",
       "type": "row"
@@ -747,7 +994,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 51},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 53},
       "id": 19,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true},
@@ -757,7 +1004,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "rate(oracle_time_model_microseconds_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"}[10m]) / 1e6",
-          "legendFormat": "inst {{inst_id}}  {{name}}",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         }
       ],
@@ -767,7 +1014,7 @@
 
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 59},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 61},
       "id": 20,
       "title": "Top Wait Events",
       "type": "row"
@@ -803,7 +1050,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 14, "x": 0, "y": 60},
+      "gridPos": {"h": 8, "w": 14, "x": 0, "y": 62},
       "id": 21,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true},
@@ -813,7 +1060,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "topk(10, rate(oracle_event_time_waited_centiseconds_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"}[10m]) / 100)",
-          "legendFormat": "inst {{inst_id}}  {{event}}",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         }
       ],
@@ -851,7 +1098,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 10, "x": 14, "y": 60},
+      "gridPos": {"h": 8, "w": 10, "x": 14, "y": 62},
       "id": 22,
       "options": {
         "legend": {"calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true},
@@ -861,7 +1108,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "${datasource}"},
           "expr": "topk(10, rate(oracle_event_waits_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"}[10m]))",
-          "legendFormat": "inst {{inst_id}}  {{event}}",
+          "legendFormat": "{{__auto}}",
           "refId": "A"
         }
       ],
@@ -871,10 +1118,70 @@
 
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 68},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 70},
       "id": 23,
       "title": "Flash Recovery Area",
       "type": "row"
+    },
+
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {"group": "A", "mode": "none"},
+            "thresholdsStyle": {"mode": "off"}
+          },
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 9, "w": 18, "x": 0, "y": 71},
+      "id": 35,
+      "options": {
+        "legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "desc"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "oracle_fra_used_bytes{instance=\"$instance\"}",
+          "legendFormat": "Used",
+          "refId": "A"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "oracle_fra_reclaimable_bytes{instance=\"$instance\"}",
+          "legendFormat": "Reclaimable",
+          "refId": "B"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "${datasource}"},
+          "expr": "oracle_fra_limit_bytes{instance=\"$instance\"}",
+          "legendFormat": "Limit",
+          "refId": "C"
+        }
+      ],
+      "title": "FRA Space Over Time",
+      "type": "timeseries"
     },
 
     {
@@ -897,7 +1204,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 69},
+      "gridPos": {"h": 3, "w": 6, "x": 18, "y": 71},
       "id": 24,
       "options": {
         "orientation": "auto",
@@ -928,7 +1235,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 69},
+      "gridPos": {"h": 3, "w": 6, "x": 18, "y": 74},
       "id": 25,
       "options": {
         "colorMode": "value",
@@ -961,7 +1268,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 69},
+      "gridPos": {"h": 3, "w": 6, "x": 18, "y": 77},
       "id": 26,
       "options": {
         "colorMode": "value",
@@ -985,7 +1292,7 @@
 
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 75},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 80},
       "id": 27,
       "title": "Data Guard",
       "type": "row"
@@ -1009,7 +1316,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 12, "x": 0, "y": 76},
+      "gridPos": {"h": 4, "w": 12, "x": 0, "y": 81},
       "id": 28,
       "options": {
         "colorMode": "background",
@@ -1049,7 +1356,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 4, "w": 12, "x": 12, "y": 76},
+      "gridPos": {"h": 4, "w": 12, "x": 12, "y": 81},
       "id": 29,
       "options": {
         "colorMode": "background",
@@ -1073,7 +1380,7 @@
 
     {
       "collapsed": false,
-      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 80},
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 85},
       "id": 30,
       "title": "Sanity",
       "type": "row"
@@ -1118,7 +1425,7 @@
           }
         ]
       },
-      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 81},
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 86},
       "id": 31,
       "options": {
         "cellHeight": "sm",
