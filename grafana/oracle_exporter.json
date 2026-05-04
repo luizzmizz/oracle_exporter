@@ -82,7 +82,30 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(oracle_scrape_collector_success{site=~\"$site\"}, instance)",
+        "definition": "label_values(oracle_scrape_collector_success, environment)",
+        "hide": 0,
+        "includeAll": true,
+        "allValue": ".*",
+        "label": "Environment",
+        "multi": false,
+        "name": "env",
+        "options": [],
+        "query": {
+          "query": "label_values(oracle_scrape_collector_success, environment)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "definition": "label_values(oracle_scrape_collector_success{site=~\"$site\", environment=~\"$env\"}, instance)",
         "hide": 0,
         "includeAll": false,
         "label": "Database",
@@ -90,7 +113,7 @@
         "name": "instance",
         "options": [],
         "query": {
-          "query": "label_values(oracle_scrape_collector_success{site=~\"$site\"}, instance)",
+          "query": "label_values(oracle_scrape_collector_success{site=~\"$site\", environment=~\"$env\"}, instance)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,
