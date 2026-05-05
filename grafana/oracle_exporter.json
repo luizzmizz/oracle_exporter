@@ -248,7 +248,7 @@
             "uid": "${datasource}"
           },
           "expr": "max by (inst_id, instance_name, version, status) (oracle_instance_uptime_seconds{instance=\"$instance\", inst_id=~\"$inst_id\"})",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{instance_name}}:{{inst_id}}",
           "refId": "A"
         }
       ],
@@ -315,7 +315,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id) (oracle_session_count{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", status=\"active\"})",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{inst_id}}",
           "refId": "A"
         }
       ],
@@ -997,10 +997,8 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "continuous-GrYlRd"
+            "mode": "thresholds"
           },
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1018,34 +1016,307 @@
               }
             ]
           },
-          "unit": "percent"
+          "unit": "percent",
+          "min": 0,
+          "max": 100
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Free %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "custom.width",
+                "value": 200
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 10
+                    },
+                    {
+                      "color": "green",
+                      "value": 25
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "custom.width",
+                "value": 200
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 75
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Allocated %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "custom.width",
+                "value": 200
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 75
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "names": [
+                  "Used",
+                  "Free",
+                  "Total",
+                  "Allocated"
+                ]
+              }
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "custom.align",
+                "value": "right"
+              },
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "solid"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 80
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "ONLINE": {
+                        "text": "ONLINE",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "OFFLINE": {
+                        "text": "OFFLINE",
+                        "color": "red",
+                        "index": 1
+                      },
+                      "READ ONLY": {
+                        "text": "READ ONLY",
+                        "color": "blue",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "PDB:Tablespace"
+            },
+            "properties": [
+              {
+                "id": "custom.align",
+                "value": "left"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
-        "h": 10,
-        "w": 12,
+        "h": 12,
+        "w": 16,
         "x": 0,
         "y": 15
       },
       "id": 6,
       "options": {
-        "barWidth": 0.8,
-        "fillOpacity": 80,
-        "gradientMode": "scheme",
-        "groupWidth": 0.7,
-        "legend": {
-          "displayMode": "hidden",
-          "placement": "bottom",
-          "showLegend": false
+        "footer": {
+          "show": false
         },
-        "orientation": "horizontal",
-        "tooltip": {
-          "mode": "all",
-          "sort": "none"
-        },
-        "xField": "PDB:Tablespace",
-        "colorByField": "Usage %"
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Used %",
+            "desc": true
+          }
+        ]
       },
       "targets": [
         {
@@ -1053,38 +1324,191 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sort_desc(label_join(max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_used_bytes{instance=\"$instance\",pdb=~\"$pdb\"}) / max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_total_bytes{instance=\"$instance\",pdb=~\"$pdb\"}) * 100, \"ts_label\", \":\", \"pdb\", \"tablespace\"))",
+          "expr": "label_join(max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_free_bytes{instance=\"$instance\",pdb=~\"$pdb\"}) / max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_total_bytes{instance=\"$instance\",pdb=~\"$pdb\"}) * 100, \"ts_label\", \":\", \"pdb\", \"tablespace\")",
           "format": "table",
           "instant": true,
           "legendFormat": "",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "label_join(max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_used_bytes{instance=\"$instance\",pdb=~\"$pdb\"}) / max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_total_bytes{instance=\"$instance\",pdb=~\"$pdb\"}) * 100, \"ts_label\", \":\", \"pdb\", \"tablespace\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "label_join(max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_allocated_bytes{instance=\"$instance\",pdb=~\"$pdb\"}) / max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_total_bytes{instance=\"$instance\",pdb=~\"$pdb\"}) * 100, \"ts_label\", \":\", \"pdb\", \"tablespace\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "label_join(max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_used_bytes{instance=\"$instance\",pdb=~\"$pdb\"}), \"ts_label\", \":\", \"pdb\", \"tablespace\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "label_join(max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_free_bytes{instance=\"$instance\",pdb=~\"$pdb\"}), \"ts_label\", \":\", \"pdb\", \"tablespace\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "label_join(max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_total_bytes{instance=\"$instance\",pdb=~\"$pdb\"}), \"ts_label\", \":\", \"pdb\", \"tablespace\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "label_join(max by (instance, pdb, tablespace, contents, status) (oracle_tablespace_allocated_bytes{instance=\"$instance\",pdb=~\"$pdb\"}), \"ts_label\", \":\", \"pdb\", \"tablespace\")",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "G"
         }
       ],
       "title": "Tablespace Usage %",
       "transformations": [
         {
+          "id": "joinByField",
+          "options": {
+            "byField": "ts_label",
+            "mode": "outer"
+          }
+        },
+        {
           "id": "organize",
           "options": {
             "excludeByName": {
               "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true,
+              "Time 5": true,
+              "Time 6": true,
+              "Time 7": true,
               "__name__": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "__name__ 3": true,
+              "__name__ 4": true,
+              "__name__ 5": true,
+              "__name__ 6": true,
+              "__name__ 7": true,
               "job": true,
+              "job 1": true,
+              "job 2": true,
+              "job 3": true,
+              "job 4": true,
+              "job 5": true,
+              "job 6": true,
+              "job 7": true,
               "instance": true,
+              "instance 1": true,
+              "instance 2": true,
+              "instance 3": true,
+              "instance 4": true,
+              "instance 5": true,
+              "instance 6": true,
+              "instance 7": true,
               "site": true,
+              "site 1": true,
+              "site 2": true,
+              "site 3": true,
+              "site 4": true,
+              "site 5": true,
+              "site 6": true,
+              "site 7": true,
               "pdb": true,
-              "tablespace": true
+              "pdb 1": true,
+              "pdb 2": true,
+              "pdb 3": true,
+              "pdb 4": true,
+              "pdb 5": true,
+              "pdb 6": true,
+              "pdb 7": true,
+              "tablespace": true,
+              "tablespace 1": true,
+              "tablespace 2": true,
+              "tablespace 3": true,
+              "tablespace 4": true,
+              "tablespace 5": true,
+              "tablespace 6": true,
+              "tablespace 7": true,
+              "contents 2": true,
+              "contents 3": true,
+              "contents 4": true,
+              "contents 5": true,
+              "contents 6": true,
+              "contents 7": true,
+              "status 2": true,
+              "status 3": true,
+              "status 4": true,
+              "status 5": true,
+              "status 6": true,
+              "status 7": true
             },
             "renameByName": {
               "ts_label": "PDB:Tablespace",
               "contents": "Type",
+              "contents 1": "Type",
               "status": "Status",
-              "autoextensible": "Autoext.",
-              "Value": "Usage %"
+              "status 1": "Status",
+              "Value #A": "Free %",
+              "Value #B": "Used %",
+              "Value #C": "Allocated %",
+              "Value #D": "Used",
+              "Value #E": "Free",
+              "Value #F": "Total",
+              "Value #G": "Allocated"
+            },
+            "indexByName": {
+              "PDB:Tablespace": 0,
+              "Type": 1,
+              "Status": 2,
+              "Free": 3,
+              "Free %": 4,
+              "Used": 5,
+              "Used %": 6,
+              "Allocated": 7,
+              "Allocated %": 8,
+              "Total": 9
             }
           }
         }
       ],
-      "type": "barchart"
+      "type": "table"
     },
     {
       "datasource": {
@@ -1096,9 +1520,6 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1108,42 +1529,311 @@
               },
               {
                 "color": "yellow",
-                "value": 70
+                "value": 75
               },
               {
                 "color": "red",
-                "value": 85
+                "value": 90
               }
             ]
           },
-          "unit": "percent"
+          "unit": "percent",
+          "min": 0,
+          "max": 100
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Free %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "custom.width",
+                "value": 180
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 10
+                    },
+                    {
+                      "color": "green",
+                      "value": 25
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Used %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "custom.width",
+                "value": 180
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 75
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "names": [
+                  "Used",
+                  "Free",
+                  "Total"
+                ]
+              }
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "custom.align",
+                "value": "right"
+              },
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Offline"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.width",
+                "value": 70
+              },
+              {
+                "id": "custom.align",
+                "value": "center"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "solid"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "CONNECTED": {
+                        "text": "CONNECTED",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "DISMOUNTED": {
+                        "text": "DISMOUNTED",
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "solid"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Diskgroup"
+            },
+            "properties": [
+              {
+                "id": "custom.align",
+                "value": "left"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
+        "h": 12,
+        "w": 8,
+        "x": 16,
         "y": 15
       },
       "id": 8,
       "options": {
-        "barWidth": 0.8,
-        "fillOpacity": 80,
-        "gradientMode": "scheme",
-        "groupWidth": 0.7,
-        "legend": {
-          "displayMode": "hidden",
-          "placement": "bottom",
-          "showLegend": false
+        "footer": {
+          "show": false
         },
-        "orientation": "horizontal",
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        },
-        "xField": "Diskgroup",
-        "colorByField": "Usage %"
+        "showHeader": true,
+        "sortBy": [
+          {
+            "displayName": "Used %",
+            "desc": true
+          }
+        ]
       },
       "targets": [
         {
@@ -1151,109 +1841,162 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sort_desc(\n  max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_used_bytes{instance=\"$instance\"})\n  / max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_total_bytes{instance=\"$instance\"})\n  * 100\n)",
+          "expr": "max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_free_bytes{instance=\"$instance\"}) / max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_total_bytes{instance=\"$instance\"}) * 100",
           "format": "table",
           "instant": true,
           "legendFormat": "",
           "refId": "A"
-        }
-      ],
-      "title": "ASM Diskgroup Usage %  (mirror-aware)",
-      "transformations": [
+        },
         {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Time": true,
-              "__name__": true,
-              "job": true,
-              "instance": true,
-              "site": true,
-              "state": true
-            },
-            "renameByName": {
-              "diskgroup": "Diskgroup",
-              "type": "Redundancy",
-              "Value": "Usage %"
-            }
-          }
-        }
-      ],
-      "type": "barchart"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "green",
-                  "index": 0,
-                  "text": "0"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
+          "expr": "max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_used_bytes{instance=\"$instance\"}) / max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_total_bytes{instance=\"$instance\"}) * 100",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
           },
-          "unit": "short"
+          "expr": "max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_used_bytes{instance=\"$instance\"})",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "C"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 3,
-        "w": 12,
-        "x": 12,
-        "y": 22
-      },
-      "id": 9,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_free_bytes{instance=\"$instance\"})",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "D"
         },
-        "textMode": "auto"
-      },
-      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_total_bytes{instance=\"$instance\"})",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "E"
+        },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
           "expr": "max by (instance, diskgroup, type, state) (oracle_asm_diskgroup_offline_disks{instance=\"$instance\"})",
-          "legendFormat": "{{diskgroup}}",
-          "refId": "A"
+          "format": "table",
+          "instant": true,
+          "legendFormat": "",
+          "refId": "F"
         }
       ],
-      "title": "Offline Disks",
-      "type": "stat"
+      "title": "ASM Diskgroup Usage %",
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "diskgroup",
+            "mode": "outer"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Time 1": true,
+              "Time 2": true,
+              "Time 3": true,
+              "Time 4": true,
+              "Time 5": true,
+              "Time 6": true,
+              "__name__": true,
+              "__name__ 1": true,
+              "__name__ 2": true,
+              "__name__ 3": true,
+              "__name__ 4": true,
+              "__name__ 5": true,
+              "__name__ 6": true,
+              "job": true,
+              "job 1": true,
+              "job 2": true,
+              "job 3": true,
+              "job 4": true,
+              "job 5": true,
+              "job 6": true,
+              "instance": true,
+              "instance 1": true,
+              "instance 2": true,
+              "instance 3": true,
+              "instance 4": true,
+              "instance 5": true,
+              "instance 6": true,
+              "site": true,
+              "site 1": true,
+              "site 2": true,
+              "site 3": true,
+              "site 4": true,
+              "site 5": true,
+              "site 6": true,
+              "environment": true,
+              "environment 1": true,
+              "environment 2": true,
+              "environment 3": true,
+              "environment 4": true,
+              "environment 5": true,
+              "environment 6": true,
+              "type 2": true,
+              "type 3": true,
+              "type 4": true,
+              "type 5": true,
+              "type 6": true,
+              "state 2": true,
+              "state 3": true,
+              "state 4": true,
+              "state 5": true,
+              "state 6": true
+            },
+            "renameByName": {
+              "diskgroup": "Diskgroup",
+              "type": "Type",
+              "type 1": "Type",
+              "state": "State",
+              "state 1": "State",
+              "Value #A": "Free %",
+              "Value #B": "Used %",
+              "Value #C": "Used",
+              "Value #D": "Free",
+              "Value #E": "Total",
+              "Value #F": "Offline"
+            },
+            "indexByName": {
+              "Diskgroup": 0,
+              "Type": 1,
+              "State": 2,
+              "Offline": 3,
+              "Free": 4,
+              "Free %": 5,
+              "Used": 6,
+              "Used %": 7,
+              "Total": 8
+            }
+          }
+        }
+      ],
+      "type": "table"
     },
     {
       "collapsed": false,
@@ -1261,7 +2004,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 27
       },
       "id": 10,
       "title": "Sessions",
@@ -1325,7 +2068,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 28
       },
       "id": 11,
       "options": {
@@ -1350,7 +2093,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, status, type) (oracle_session_count{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"})",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{status}} {{type}}",
           "refId": "A"
         }
       ],
@@ -1415,7 +2158,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 26
+        "y": 28
       },
       "id": 12,
       "options": {
@@ -1440,7 +2183,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, type) (oracle_session_count{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"})",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{type}}",
           "refId": "A"
         }
       ],
@@ -1453,7 +2196,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 36
       },
       "id": 13,
       "title": "Activity",
@@ -1517,7 +2260,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 37
       },
       "id": 14,
       "options": {
@@ -1542,7 +2285,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, name) (rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"physical reads\"}[10m]))",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{name}}",
           "refId": "A"
         },
         {
@@ -1551,7 +2294,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, name) (rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"physical writes\"}[10m]))",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{name}}",
           "refId": "B"
         }
       ],
@@ -1616,7 +2359,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 35
+        "y": 37
       },
       "id": 15,
       "options": {
@@ -1641,7 +2384,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, name) (rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"user commits\"}[10m]))",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{name}}",
           "refId": "A"
         },
         {
@@ -1650,7 +2393,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, name) (rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"user rollbacks\"}[10m]))",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{name}}",
           "refId": "B"
         },
         {
@@ -1659,7 +2402,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, name) (rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=\"execute count\"}[10m]))",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{name}}",
           "refId": "C"
         },
         {
@@ -1668,7 +2411,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, name) (rate(oracle_sysstat_value_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\", name=~\"parse count.*hard\"}[10m]))",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{name}}",
           "refId": "D"
         }
       ],
@@ -1681,7 +2424,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 43
+        "y": 45
       },
       "id": 16,
       "title": "Wait Classes",
@@ -1745,7 +2488,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 46
       },
       "id": 17,
       "options": {
@@ -1770,7 +2513,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, wait_class) (rate(oracle_wait_class_time_waited_centiseconds_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"}[10m])) / 100",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{wait_class}}",
           "refId": "A"
         }
       ],
@@ -1783,7 +2526,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 52
+        "y": 54
       },
       "id": 18,
       "title": "Time Model",
@@ -1847,7 +2590,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 53
+        "y": 55
       },
       "id": 19,
       "options": {
@@ -1872,7 +2615,7 @@
             "uid": "${datasource}"
           },
           "expr": "sum by (inst_id, pdb, name) (rate(oracle_time_model_microseconds_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"}[10m])) / 1e6",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{name}}",
           "refId": "A"
         }
       ],
@@ -1885,7 +2628,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 61
+        "y": 63
       },
       "id": 20,
       "title": "Top Wait Events",
@@ -1949,7 +2692,7 @@
         "h": 8,
         "w": 14,
         "x": 0,
-        "y": 62
+        "y": 64
       },
       "id": 21,
       "options": {
@@ -1974,7 +2717,7 @@
             "uid": "${datasource}"
           },
           "expr": "topk(10, sum by (inst_id, pdb, event, wait_class) (rate(oracle_event_time_waited_centiseconds_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"}[10m])) / 100)",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{event}}",
           "refId": "A"
         }
       ],
@@ -2039,7 +2782,7 @@
         "h": 8,
         "w": 10,
         "x": 14,
-        "y": 62
+        "y": 64
       },
       "id": 22,
       "options": {
@@ -2064,7 +2807,7 @@
             "uid": "${datasource}"
           },
           "expr": "topk(10, sum by (inst_id, pdb, event, wait_class) (rate(oracle_event_waits_total{instance=\"$instance\", inst_id=~\"$inst_id\", pdb=~\"$pdb\"}[10m])))",
-          "legendFormat": "{{__auto}}",
+          "legendFormat": "{{pdb}}:{{inst_id}} {{event}}",
           "refId": "A"
         }
       ],
@@ -2077,7 +2820,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 72
       },
       "id": 23,
       "title": "Flash Recovery Area",
@@ -2141,7 +2884,7 @@
         "h": 9,
         "w": 18,
         "x": 0,
-        "y": 71
+        "y": 73
       },
       "id": 35,
       "options": {
@@ -2228,7 +2971,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 71
+        "y": 73
       },
       "id": 24,
       "options": {
@@ -2285,7 +3028,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 74
+        "y": 76
       },
       "id": 25,
       "options": {
@@ -2344,7 +3087,7 @@
         "h": 3,
         "w": 6,
         "x": 18,
-        "y": 77
+        "y": 79
       },
       "id": 26,
       "options": {
@@ -2381,7 +3124,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 80
+        "y": 82
       },
       "id": 27,
       "title": "Data Guard",
@@ -2423,7 +3166,7 @@
         "h": 4,
         "w": 12,
         "x": 0,
-        "y": 81
+        "y": 83
       },
       "id": 28,
       "options": {
@@ -2490,7 +3233,7 @@
         "h": 4,
         "w": 12,
         "x": 12,
-        "y": 81
+        "y": 83
       },
       "id": 29,
       "options": {
@@ -2527,7 +3270,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 85
+        "y": 87
       },
       "id": 30,
       "title": "Sanity",
@@ -2626,7 +3369,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 86
+        "y": 88
       },
       "id": 31,
       "options": {
